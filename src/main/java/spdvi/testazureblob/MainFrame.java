@@ -147,6 +147,8 @@ public class MainFrame extends javax.swing.JFrame implements Runnable {
 
         DefaultListModel defaultListModel = new DefaultListModel();
         for (BlobItem blobItem : containerClient.listBlobs()) {
+            BlockBlobClient blobClient = containerClient.getBlobClient(blobItem.getName()).getBlockBlobClient();
+            //defaultListModel.addElement(blobItem.getName() + " (" + blobClient.getProperties().getBlobSize() + " bytes)" );
             defaultListModel.addElement(blobItem.getName());
         }
         jList1.setModel(defaultListModel);
@@ -257,7 +259,7 @@ public class MainFrame extends javax.swing.JFrame implements Runnable {
         }
         BufferedImage resultingImage = new BufferedImage(newWidth, newHeight, BufferedImage.TYPE_INT_RGB);
         Graphics2D graphics2D = resultingImage.createGraphics();
-        graphics2D.drawImage(originalImage, 0, 0, newWidth, newHeight, null);
+        graphics2D.drawImage(resultingImage, 0, 0, newWidth, newHeight, null);
         graphics2D.dispose();
         ImageIcon imageIcon = new ImageIcon(resultingImage);
         return imageIcon;
