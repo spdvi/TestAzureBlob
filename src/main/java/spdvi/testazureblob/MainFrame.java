@@ -22,6 +22,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.ArrayList;
 import javax.imageio.ImageIO;
 import javax.imageio.stream.FileImageInputStream;
 import javax.imageio.stream.ImageInputStream;
@@ -61,6 +62,8 @@ public class MainFrame extends javax.swing.JFrame implements Runnable {
         jTextField1 = new javax.swing.JTextField();
         jButton2 = new javax.swing.JButton();
         jProgressBar1 = new javax.swing.JProgressBar();
+        btnFindLargeImages = new javax.swing.JButton();
+        btnImageType = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -97,6 +100,20 @@ public class MainFrame extends javax.swing.JFrame implements Runnable {
 
         jProgressBar1.setStringPainted(true);
 
+        btnFindLargeImages.setText("Find large images");
+        btnFindLargeImages.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnFindLargeImagesActionPerformed(evt);
+            }
+        });
+
+        btnImageType.setText("JPG PNG GIF");
+        btnImageType.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnImageTypeActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -105,26 +122,35 @@ public class MainFrame extends javax.swing.JFrame implements Runnable {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                     .addGroup(layout.createSequentialGroup()
                         .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(jProgressBar1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addComponent(jProgressBar1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(75, 75, 75))
                     .addGroup(layout.createSequentialGroup()
                         .addGap(10, 10, 10)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jButton1)
                             .addGroup(layout.createSequentialGroup()
                                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 114, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addGap(31, 31, 31)
-                                .addComponent(jLabel1, javax.swing.GroupLayout.DEFAULT_SIZE, 145, Short.MAX_VALUE))
+                                .addComponent(jLabel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                             .addGroup(layout.createSequentialGroup()
                                 .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 199, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addGap(18, 18, 18)
-                                .addComponent(jButton2)))))
-                .addGap(175, 175, 175))
+                                .addComponent(jButton2))
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(jButton1)
+                                .addGap(18, 18, 18)
+                                .addComponent(btnFindLargeImages)
+                                .addGap(18, 18, 18)
+                                .addComponent(btnImageType, javax.swing.GroupLayout.PREFERRED_SIZE, 129, javax.swing.GroupLayout.PREFERRED_SIZE)))))
+                .addGap(100, 100, 100))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                 .addGap(34, 34, 34)
-                .addComponent(jButton1)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jButton1)
+                    .addComponent(btnFindLargeImages)
+                    .addComponent(btnImageType))
                 .addGap(18, 18, 18)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 167, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -186,14 +212,13 @@ public class MainFrame extends javax.swing.JFrame implements Runnable {
 //            int numberOfBlocks = dataSize / 1024;
             int numberOfBlocks = 20;
             int numberOfBPerBlock = dataSize / numberOfBlocks;  // Split every image in 20 blocks. That is, make 20 requests to Azure.
-            System.out.println("Starting download of " + dataSize + " bytes in " + numberOfBlocks + " " + numberOfBPerBlock/1024 + "kB chunks");
+            System.out.println("Starting download of " + dataSize + " bytes in " + numberOfBlocks + " " + numberOfBPerBlock / 1024 + "kB chunks");
 
-            
             int i = 0;
             outputStream = new ByteArrayOutputStream(dataSize);
 
             while (i < numberOfBlocks) {
-                BlobRange range = new BlobRange(i * numberOfBPerBlock, (long)numberOfBPerBlock);
+                BlobRange range = new BlobRange(i * numberOfBPerBlock, (long) numberOfBPerBlock);
                 DownloadRetryOptions options = new DownloadRetryOptions().setMaxRetryRequests(5);
 
                 System.out.println(i + ": Downloading bytes " + range.getOffset() + " to " + (range.getOffset() + range.getCount()) + " with status "
@@ -211,7 +236,7 @@ public class MainFrame extends javax.swing.JFrame implements Runnable {
                             Duration.ofSeconds(30), Context.NONE));
             i++;
             jProgressBar1.setValue(i * jProgressBar1.getMaximum() / (numberOfBlocks + 1));
-            
+
 //            blobClient.downloadStream(outputStream);  // Thread Blocking
             originalImage = ImageIO.read(new ByteArrayInputStream(outputStream.toByteArray()));
             ImageIcon icon = resizeImageIcon(originalImage, jLabel1.getWidth(), jLabel1.getHeight());
@@ -245,6 +270,42 @@ public class MainFrame extends javax.swing.JFrame implements Runnable {
         }
 
     }//GEN-LAST:event_jButton2ActionPerformed
+
+    private void btnFindLargeImagesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnFindLargeImagesActionPerformed
+        for (BlobItem blobItem : containerClient.listBlobs()) {
+            BlockBlobClient blobClient = containerClient.getBlobClient(blobItem.getName()).getBlockBlobClient();
+            if (blobClient.getProperties().getBlobSize() > 102400) {
+                System.out.println(blobClient.getBlobName());
+            }
+        }
+    }//GEN-LAST:event_btnFindLargeImagesActionPerformed
+
+    private void btnImageTypeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnImageTypeActionPerformed
+        ArrayList<String> jpegs = new ArrayList<>();
+        ArrayList<String> pngs = new ArrayList<>();
+        ArrayList<String> gifs = new ArrayList<>();
+        ArrayList<String> others = new ArrayList<>();
+        for (BlobItem blobItem : containerClient.listBlobs()) {
+            String blobName = blobItem.getName();
+            String extension = blobName.substring(blobName.lastIndexOf('.') + 1);
+            switch (extension.toLowerCase()) {
+                case "jpeg":
+                case "jpg":
+                    jpegs.add(blobName);
+                    break;
+                case "png":
+                    pngs.add(blobName);
+                    break;
+                case "gif":
+                    gifs.add(blobName);
+                    break;
+                default:
+                    others.add(blobName);
+            }
+        }
+
+        System.out.println(jpegs.size() + " jpegs, " + pngs.size() + " pngs, " + gifs.size() + " gifs, " + others.size() + " others.");
+    }//GEN-LAST:event_btnImageTypeActionPerformed
 
     private ImageIcon resizeImageIcon(BufferedImage originalImage, int desiredWidth, int desiredHeight) {
         int newHeight = 0;
@@ -301,6 +362,8 @@ public class MainFrame extends javax.swing.JFrame implements Runnable {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton btnFindLargeImages;
+    private javax.swing.JButton btnImageType;
     private javax.swing.JButton jButton1;
     private javax.swing.JButton jButton2;
     private javax.swing.JLabel jLabel1;
